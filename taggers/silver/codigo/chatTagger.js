@@ -179,32 +179,30 @@ const chatTagger = {
         console.log(`   Códigos actuales: [${codigos.join(', ') || 'ninguno'}]`);
         console.log(`   Nomenclatura a agregar: "${nomenclatura}"`);
         
-        // Remover signos para comparación base (DD-MM-ID)
-        const nomenclaturaSinSigno = nomenclatura.replace(/!$/, '');
-        let indiceExistente = codigos.findIndex(c => c.replace(/!$/, '') === nomenclaturaSinSigno);
+        // Extraer SOLO la base numérica: 19-02-37 (sin letra ni signo)
+        const baseNumerica = nomenclatura.match(/^\d+-\d+-\d+/)[0];
+        
+        // Buscar si existe CUALQUIER variante con la MISMA BASE NUMÉRICA
+        let indiceExistente = codigos.findIndex(c => {
+          const baseExistente = c.match(/^\d+-\d+-\d+/)[0];
+          return baseExistente === baseNumerica;
+        });
         
         let seGuardó = false;
         
         if (indiceExistente !== -1) {
-          // La base ya existe (mismo DD-MM-ID)
+          // Existe algo con la misma base numérica
           const codigoExistente = codigos[indiceExistente];
           console.log(`   ℹ️ Código YA EXISTE: "${codigoExistente}"`);
           
-          // Comparar exactamente
-          if (codigoExistente !== nomenclatura) {
-            const viejoTieneSigno = codigoExistente.endsWith('!');
-            const nuevoTieneSigno = nomenclatura.endsWith('!');
-            
-            // Solo actualizar si el nuevo tiene ! y el viejo no
-            if (nuevoTieneSigno && !viejoTieneSigno) {
-              console.log(`   🔄 ACTUALIZAR: "${codigoExistente}" → "${nomenclatura}"`);
-              codigos[indiceExistente] = nomenclatura;
-              seGuardó = true;
-            } else {
-              console.log(`   ✓ Código ya es correcto, sin cambios`);
-            }
-          } else {
+          // Si son exactamente iguales, no hacer nada
+          if (codigoExistente === nomenclatura) {
             console.log(`   ✓ Código exactamente igual, sin cambios`);
+          } else {
+            // Si la nueva es diferente, reemplazarla (versión más completa)
+            console.log(`   🔄 ACTUALIZAR: "${codigoExistente}" → "${nomenclatura}" (versión más completa)`);
+            codigos[indiceExistente] = nomenclatura;
+            seGuardó = true;
           }
         } else {
           // Es una nomenclatura nueva (diferente DD-MM-ID o diferente letra)
@@ -212,6 +210,35 @@ const chatTagger = {
           codigos.push(nomenclatura);
           seGuardó = true;
         }
+        
+        // 🧹 POST-PROCESAMIENTO: Eliminar duplicados (mantener solo la versión más completa)
+        console.log(`\n   🧹 Limpiando duplicados...`);
+        const codigosLimpiados = [];
+        
+        for (const codigo of codigos) {
+          const baseNumerica = codigo.match(/^\d+-\d+-\d+/)[0];
+          
+          const indiceExis = codigosLimpiados.findIndex(c => {
+            const baseEx = c.match(/^\d+-\d+-\d+/)[0];
+            return baseEx === baseNumerica;
+          });
+          
+          if (indiceExis === -1) {
+            codigosLimpiados.push(codigo);
+          } else {
+            const codigoExis = codigosLimpiados[indiceExis];
+            if (codigo.length > codigoExis.length) {
+              console.log(`      🗑️ Eliminando: "${codigoExis}" (incompleto) → ${codigo} (completo)`);
+              codigosLimpiados[indiceExis] = codigo;
+              seGuardó = true;
+            } else {
+              console.log(`      🗑️ Eliminando: "${codigo}" (${codigoExis} es más completo)`);
+              seGuardó = true; // ← MARCAR COMO "HAY CAMBIOS" SIEMPRE
+            }
+          }
+        }
+        
+        codigos = codigosLimpiados;
         
         // PASO 10: Guardar si hay cambios
         if (!seGuardó) {

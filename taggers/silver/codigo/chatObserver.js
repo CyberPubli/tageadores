@@ -291,33 +291,72 @@ window.chatObserver = {
     
     for (const nomItem of nomenclaturas) {
       const nomenclatura = nomItem.nomenclatura;
-      const nomenclaturaSinSigno = nomenclatura.replace(/!$/, '');
+      
+      // Extraer SOLO la base numérica: 19-02-37 (sin letra ni signo)
+      const baseNumerica = nomenclatura.match(/^\d+-\d+-\d+/)[0];
       const tieneSignoNuevo = nomenclatura.endsWith('!');
       
-      // ¿Ya existe el código base (sin signo)?
-      let indiceExistente = codigos.findIndex(c => c.replace(/!$/, '') === nomenclaturaSinSigno);
+      // Buscar si existe CUALQUIER variante con la MISMA BASE NUMÉRICA
+      let indiceExistente = codigos.findIndex(c => {
+        const baseExistente = c.match(/^\d+-\d+-\d+/)[0];
+        return baseExistente === baseNumerica;
+      });
       
       if (indiceExistente === -1) {
-        // No existe, agregarlo
+        // No existe NADA con esa base, agregarlo
         console.log(`      ➕ Agregando: "${nomenclatura}"`);
         codigos.push(nomenclatura);
         huboModificaciones = true;
       } else {
-        // Existe el código base. Verificar si necesita el signo
+        // Existe algo con la misma base
         const codigoExistente = codigos[indiceExistente];
-        const tieneSignoExistente = codigoExistente.endsWith('!');
         
-        if (tieneSignoNuevo && !tieneSignoExistente) {
-          // Tiene carga pero el guardado no tiene signo - ACTUALIZAR
-          console.log(`      🔄 Actualizando: "${codigoExistente}" → "${nomenclatura}" (agregando !)`);
+        // Si la nueva es más completa (tiene letra o signo), reemplaza a la vieja
+        if (nomenclatura !== codigoExistente) {
+          console.log(`      🔄 Reemplazando: "${codigoExistente}" → "${nomenclatura}" (versión más completa)`);
           codigos[indiceExistente] = nomenclatura;
           huboModificaciones = true;
         } else {
-          // Ya está igual o no necesita cambios
-          console.log(`      ✓ "${codigoExistente}" ya está correcto`);
+          console.log(`      ✓ "${codigoExistente}" ya es idéntico`);
         }
       }
     }
+    
+    // 🧹 POST-PROCESAMIENTO: Eliminar duplicados (mantener solo la versión más completa)
+    console.log(`\n   🧹 Limpiando duplicados...`);
+    const codigosLimpiados = [];
+    
+    for (const codigo of codigos) {
+      const baseNumerica = codigo.match(/^\d+-\d+-\d+/)[0];
+      
+      // ¿Ya existe algo con esta base?
+      const indiceExistente = codigosLimpiados.findIndex(c => {
+        const baseEx = c.match(/^\d+-\d+-\d+/)[0];
+        return baseEx === baseNumerica;
+      });
+      
+      if (indiceExistente === -1) {
+        // No existe, agregar
+        codigosLimpiados.push(codigo);
+      } else {
+        // Existe algo con la misma base
+        const codigoExistente = codigosLimpiados[indiceExistente];
+        
+        // Mantener la VERSIÓN MÁS COMPLETA (más caracteres = más específica)
+        if (codigo.length > codigoExistente.length) {
+          console.log(`      🗑️ Eliminando duplicado: "${codigoExistente}" (versión incompleta)`);
+          console.log(`      ✅ Manteniendo: "${codigo}" (versión completa)`);
+          codigosLimpiados[indiceExistente] = codigo;
+          huboModificaciones = true;
+        } else {
+          console.log(`      🗑️ Eliminando duplicado: "${codigo}" (${codigoExistente} es más completo)`);
+          huboModificaciones = true; // ← MARCAR COMO "HAY CAMBIOS" SIEMPRE
+        }
+      }
+    }
+    
+    // Reasignar códigos limpios
+    codigos = codigosLimpiados;
     
     if (!huboModificaciones) {
       console.log(`      ℹ️ Sin cambios, cerrando modal...`);
