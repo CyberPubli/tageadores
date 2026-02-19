@@ -243,42 +243,61 @@ const chatTagger = {
           console.log(`   Nuevo valor: [${nuevoValor}]`);
           
           // Esperar a que se procese el change
-          await new Promise(r => setTimeout(r, 1500));
+          await new Promise(r => setTimeout(r, 500));
           
-          // Buscar y clickear botón Guardar
-          console.log(`🔟 STEP 10: Buscando botón Guardar...`);
-          const saveBtn = document.querySelector('button[aria-label="Guardar"]');
+          // ⌨️ Forzar focus + Enter (cuando el CRM es caprichoso)
+          console.log(`🔟 STEP 10: Simulando Enter completo...`);
           
-          if (!saveBtn) {
-            console.warn(`   ❌ Botón Guardar NO encontrado`);
-            const allBtns = document.querySelectorAll('button');
-            console.log(`   📋 Botones disponibles:`);
-            Array.from(allBtns).forEach((btn, i) => {
-              const label = btn.getAttribute('aria-label') || 'sin label';
-              const text = btn.textContent.trim() || 'sin texto';
-              console.log(`      [${i}] aria-label="${label}" | text="${text}"`);
-            });
-          } else {
-            console.log(`   ✅ Botón Guardar encontrado`);
-            saveBtn.click();
-            console.log(`   👆 Click ejecutado`);
-            
-            // ⌨️ Presionar Enter para confirmar
-            await new Promise(r => setTimeout(r, 500));
-            const enterEvent = new KeyboardEvent('keydown', {
-              key: 'Enter',
-              code: 'Enter',
-              keyCode: 13,
-              which: 13,
-              bubbles: true
-            });
-            document.activeElement.dispatchEvent(enterEvent);
-            console.log(`   ⌨️ Enter presionado`);
-            
-            // Esperar a que se guarde
-            await new Promise(r => setTimeout(r, 2000));
-            console.log(`✅ Chat ${chatNum}: PROCESADO Y GUARDADO ✓`);
-          }
+          // 1. Forzar focus en el textarea
+          textarea.focus();
+          console.log(`   ✅ Textarea enfocado, valor: "${textarea.value}"`);
+          
+          // 2. Simular Enter con keydown + keypress + keyup
+          textarea.dispatchEvent(new KeyboardEvent('keydown', {
+            key: 'Enter',
+            code: 'Enter',
+            keyCode: 13,
+            which: 13,
+            bubbles: true,
+            cancelable: true,
+            composed: true
+          }));
+          
+          textarea.dispatchEvent(new KeyboardEvent('keypress', {
+            key: 'Enter',
+            code: 'Enter',
+            keyCode: 13,
+            which: 13,
+            charCode: 13,
+            bubbles: true,
+            cancelable: true,
+            composed: true
+          }));
+          
+          textarea.dispatchEvent(new KeyboardEvent('keyup', {
+            key: 'Enter',
+            code: 'Enter',
+            keyCode: 13,
+            which: 13,
+            bubbles: true,
+            cancelable: true,
+            composed: true
+          }));
+          
+          console.log(`   ⌨️ Eventos keydown + keypress + keyup despachados`);
+          
+          // 3. Esperar a que se procese
+          await new Promise(r => setTimeout(r, 300));
+          
+          // 4. Enviar input + change
+          textarea.dispatchEvent(new Event('input', { bubbles: true }));
+          textarea.dispatchEvent(new Event('change', { bubbles: true }));
+          console.log(`   ✅ Eventos input + change despachados`);
+          
+          // Esperar a que se guarde
+          await new Promise(r => setTimeout(r, 2000));
+          console.log(`✅ Chat ${chatNum}: PROCESADO Y GUARDADO ✓`);
+        }
         }
         
         // PASO 11: Siguiente chat

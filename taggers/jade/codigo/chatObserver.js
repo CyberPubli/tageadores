@@ -358,27 +358,54 @@ const chatObserver = {
     // Esperar a que procese el cambio
     await new Promise(r => setTimeout(r, 1200));
     
-    // Buscar y clickear el botón Guardar
-    const saveBtn = document.querySelector('button[aria-label="Guardar"]');
-    if (saveBtn) {
-      console.log(`      ✓ Botón Guardar encontrado`);
-      saveBtn.click();
-      console.log(`      💾 Clickeado Guardar`);
-      
-      // Esperar a que se guarde
-      await new Promise(r => setTimeout(r, 1500));
-      console.log(`      ✅ Guardado completado`);
-    } else {
-      console.warn(`      ❌ No encontró botón Guardar`);
-      
-      // Mostrar todos los botones disponibles
-      const allBtns = document.querySelectorAll('button');
-      console.warn(`      Total botones en la página: ${allBtns.length}`);
-      Array.from(allBtns).slice(0, 10).forEach((btn, i) => {
-        const label = btn.getAttribute('aria-label') || 'sin label';
-        console.warn(`        [${i}] aria-label="${label}" | text="${btn.textContent.trim()}"`);
-      });
-    }
+    // ⌨️ Forzar focus + Enter (cuando el CRM es caprichoso)
+    console.log(`      🔟 Simulando Enter completo...`);
+    
+    // 1. Forzar focus en el textarea
+    textarea.focus();
+    console.log(`      ✅ Textarea enfocado`);
+    
+    // 2. Simular Enter con keydown + keypress + keyup
+    textarea.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'Enter',
+      code: 'Enter',
+      keyCode: 13,
+      which: 13,
+      bubbles: true,
+      cancelable: true,
+      composed: true
+    }));
+    
+    textarea.dispatchEvent(new KeyboardEvent('keypress', {
+      key: 'Enter',
+      code: 'Enter',
+      keyCode: 13,
+      which: 13,
+      charCode: 13,
+      bubbles: true,
+      cancelable: true,
+      composed: true
+    }));
+    
+    textarea.dispatchEvent(new KeyboardEvent('keyup', {
+      key: 'Enter',
+      code: 'Enter',
+      keyCode: 13,
+      which: 13,
+      bubbles: true,
+      cancelable: true,
+      composed: true
+    }));
+    
+    console.log(`      ⌨️ Eventos keydown + keypress + keyup despachados`);
+    
+    // 3. Esperar a que se procese
+    await new Promise(r => setTimeout(r, 300));
+    
+    // 4. Enviar input + change
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    textarea.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log(`      ✅ Guardado completado`);
   },
   
   /**
